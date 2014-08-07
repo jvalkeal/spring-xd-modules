@@ -1,0 +1,11 @@
+XD processor header modify sample
+=================================
+
+== Build and Install
+To build, clone this repository, cd to `header-modify` and type `./gradlew clean build xdModule`
+
+To install this processor into Spring XD you will need to
+
+```
+cp -R build/modules/processor/header-modify ${XD_HOME}/modules/processor
+```
