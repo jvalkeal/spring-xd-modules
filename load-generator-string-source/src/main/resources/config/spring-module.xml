@@ -12,6 +12,7 @@
         <constructor-arg name="messageCount" value="${messageCount}"/>
         <constructor-arg name="recordCount" value="${recordCount}"/>
         <constructor-arg name="recordDelimiter" value="${recordDelimiter}"/>
+        <constructor-arg name="recordType" value="${recordType}"/>
         <property name="autoStartup" value="false"/>
         <property name="outputChannel" ref="output"/>
     </bean>

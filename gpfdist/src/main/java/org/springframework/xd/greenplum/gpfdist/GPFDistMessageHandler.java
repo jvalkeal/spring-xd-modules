@@ -45,7 +45,9 @@ public class GPFDistMessageHandler extends AbstractGPFDistMessageHandler {
 
 	private final int flushTime;
 
-	private final int batchTime;
+	private final int batchTimeout;
+
+	private final int batchCount;
 
 	private final int batchPeriod;
 
@@ -65,12 +67,13 @@ public class GPFDistMessageHandler extends AbstractGPFDistMessageHandler {
 	private Meter meter = new Meter();
 	private int meterCount = 0;
 
-	public GPFDistMessageHandler(int port, int flushCount, int flushTime, int batchTime, int batchPeriod, String delimiter) {
+	public GPFDistMessageHandler(int port, int flushCount, int flushTime, int batchTimeout, int batchCount, int batchPeriod, String delimiter) {
 		super();
 		this.port = port;
 		this.flushCount = flushCount;
 		this.flushTime = flushTime;
-		this.batchTime = batchTime;
+		this.batchTimeout = batchTimeout;
+		this.batchCount = batchCount;
 		this.batchPeriod = batchPeriod;
 		this.delimiter = StringUtils.hasLength(delimiter) ? delimiter : null;
 	}
@@ -105,7 +108,7 @@ public class GPFDistMessageHandler extends AbstractGPFDistMessageHandler {
 	protected void doStart() {
 		try {
 			log.info("Creating gpfdist protocol listener on port=" + port);
-			gpfdistServer = new GPFDistServer(processor, port, flushCount, flushTime, batchTime);
+			gpfdistServer = new GPFDistServer(processor, port, flushCount, flushTime, batchTimeout, batchCount);
 			gpfdistServer.start();
 		} catch (Exception e) {
 			throw new RuntimeException("Error starting protocol listener", e);
@@ -119,7 +122,11 @@ public class GPFDistMessageHandler extends AbstractGPFDistMessageHandler {
 				public void run() {
 					try {
 						while(!taskFuture.interrupted) {
-							greenplumLoad.load();
+							try {
+								greenplumLoad.load();
+							} catch (Exception e) {
+								log.error("Error in load", e);
+							}
 							Thread.sleep(batchPeriod*1000);
 						}
 					} catch (Exception e) {

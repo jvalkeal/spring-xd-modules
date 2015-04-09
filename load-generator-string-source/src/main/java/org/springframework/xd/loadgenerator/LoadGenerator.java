@@ -37,12 +37,13 @@ public class LoadGenerator extends MessageProducerSupport {
 	private int messageCount;
 	private int recordCount;
 	private String recordDelimiter;
+	private boolean recordType;
 	private final AtomicBoolean running = new AtomicBoolean(false);
 	private ExecutorService executorService;
 
 	Logger logger = LoggerFactory.getLogger(LoadGenerator.class);
 
-	public LoadGenerator(int producers, int messageCount, int recordCount, String recordDelimiter) {
+	public LoadGenerator(int producers, int messageCount, int recordCount, String recordDelimiter, String recordType) {
 		this.producers = producers;
 		this.messageCount = messageCount;
 		this.recordCount = recordCount;
@@ -50,6 +51,9 @@ public class LoadGenerator extends MessageProducerSupport {
 			this.recordDelimiter = "\t";
 		} else {
 			this.recordDelimiter = recordDelimiter;
+		}
+		if ("counter".equals(recordType)) {
+			this.recordType = true;
 		}
 	}
 
@@ -80,12 +84,15 @@ public class LoadGenerator extends MessageProducerSupport {
 		private void send() {
 			logger.info("Sending " + messageCount + " messages");
 			for (int x = 0; x < messageCount; x++) {
-				long time = System.nanoTime();
 				StringBuilder buf = new StringBuilder();
 				buf.append(prefix);
 				for (int i = 0; i < recordCount; i++) {
 					buf.append(recordDelimiter);
-					buf.append(time);
+					if (recordType) {
+						buf.append(x);
+					} else {
+						buf.append(System.nanoTime());
+					}
 				}
 				sendMessage(MessageBuilder.withPayload(buf.toString()).build());
 			}

@@ -18,6 +18,9 @@ package org.springframework.xd.greenplum.gpfdist;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import reactor.fn.Consumer;
 import reactor.fn.Function;
 import reactor.io.buffer.Buffer;
@@ -25,13 +28,20 @@ import reactor.io.codec.Codec;
 
 public class GPFDistCodec extends Codec<Buffer, Buffer, Buffer> {
 
+	private final static Log log = LogFactory.getLog(GPFDistCodec.class);
+
 	final byte[] h1 = Character.toString('D').getBytes(Charset.forName("UTF-8"));
+
+	final Object lock = new Object();
 
 	@SuppressWarnings("resource")
 	@Override
 	public Buffer apply(Buffer t) {
-		byte[] h2 = ByteBuffer.allocate(4).putInt(t.flip().remaining()).array();
-		return new Buffer().append(h1).append(h2).append(t).flip();
+		log.info("DDDD " + t.hashCode());
+		synchronized (lock) {
+			byte[] h2 = ByteBuffer.allocate(4).putInt(t.flip().remaining()).array();
+			return new Buffer().append(h1).append(h2).append(t).flip();
+		}
 	}
 
 	@Override
