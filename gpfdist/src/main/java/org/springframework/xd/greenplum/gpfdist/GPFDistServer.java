@@ -94,41 +94,40 @@ public class GPFDistServer {
 
 		final Stream<Buffer> stream = Streams
 		.wrap(processor)
-//		.observe(new Consumer<Buffer>() {
-//			@Override
-//			public void accept(Buffer t) {
-//				countedData.incrementAndGet();
-//			}
-//		})
+		.observe(new Consumer<Buffer>() {
+			@Override
+			public void accept(Buffer t) {
+				countedData.incrementAndGet();
+			}
+		})
 		.window(flushCount, flushTime, TimeUnit.SECONDS)
 		.flatMap(new Function<Stream<Buffer>, Publisher<Buffer>>() {
 
 			@Override
 			public Publisher<Buffer> apply(Stream<Buffer> t) {
 
-				Stream<Buffer> observe = t.observe(new Consumer<Buffer>() {
-					@Override
-					public void accept(Buffer t) {
-						countedData.incrementAndGet();
-					}
-				});
+//				Stream<Buffer> observe = t.observe(new Consumer<Buffer>() {
+//					@Override
+//					public void accept(Buffer t) {
+//						countedData.incrementAndGet();
+//					}
+//				});
 
-				Stream<Buffer> reduce = observe.reduce(new Buffer(), new BiFunction<Buffer, Buffer, Buffer>() {
-
-					@Override
-					public Buffer apply(Buffer prev, Buffer next) {
-//						log.info("XXXX1 " + next.asString());
-						return prev.append(next);
-					}
-				});
-
-//				Stream<Buffer> reduce = t.reduce(new Buffer(), new BiFunction<Buffer, Buffer, Buffer>() {
+//				Stream<Buffer> reduce = observe.reduce(new Buffer(), new BiFunction<Buffer, Buffer, Buffer>() {
 //
 //					@Override
 //					public Buffer apply(Buffer prev, Buffer next) {
 //						return prev.append(next);
 //					}
 //				});
+
+				Stream<Buffer> reduce = t.reduce(new Buffer(), new BiFunction<Buffer, Buffer, Buffer>() {
+
+					@Override
+					public Buffer apply(Buffer prev, Buffer next) {
+						return prev.append(next);
+					}
+				});
 //				return reduce.observe(new Consumer<Buffer>() {
 //					@Override
 //					public void accept(Buffer t) {
@@ -193,17 +192,19 @@ public class GPFDistServer {
 //						.log("before take")
 //						.take(batchTime, TimeUnit.SECONDS)
 //						.log("after take")
+						.take(batchCount)
 						.observe(new Consumer<Buffer>() {
 							@Override
 							public void accept(Buffer t) {
 								countedBatchAfter.incrementAndGet();
 							}
 						})
-						.take(batchTimeout, TimeUnit.SECONDS)
-						.concatWith(Streams.just(Buffer.wrap(new byte[0])));
-//						.take(batchCount)
-//						.timeout(batchTimeout, TimeUnit.SECONDS, Streams.<Buffer>empty().log("reactor.timeout"))
+//						.take(batchTimeout, TimeUnit.SECONDS)
 //						.concatWith(Streams.just(Buffer.wrap(new byte[0])));
+
+//						.take(batchCount)
+						.timeout(batchTimeout, TimeUnit.SECONDS, Streams.<Buffer>empty())
+						.concatWith(Streams.just(Buffer.wrap(new byte[0])));
 
 //						.timeout(batchTimeout, TimeUnit.SECONDS, Streams.just(Buffer.wrap(new byte[0])).log("reactor.timeout"));
 			}
