@@ -16,17 +16,14 @@
 package org.springframework.xd.greenplum.gpfdist;
 
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 
-import reactor.Environment;
 import reactor.core.processor.RingBufferWorkProcessor;
 import reactor.fn.BiFunction;
-import reactor.fn.Consumer;
 import reactor.fn.Function;
 import reactor.io.buffer.Buffer;
 import reactor.io.net.NetStreams;
@@ -34,7 +31,6 @@ import reactor.io.net.Spec.HttpServer;
 import reactor.io.net.http.HttpChannel;
 import reactor.rx.Stream;
 import reactor.rx.Streams;
-import reactor.rx.broadcast.SerializedBroadcaster;
 
 public class GPFDistServer {
 
@@ -80,82 +76,24 @@ public class GPFDistServer {
 	private reactor.io.net.http.HttpServer<Buffer, Buffer> createProtocolListener()
 			throws Exception {
 
-		final AtomicLong countedData = new AtomicLong();
-		final AtomicLong countedBatchBefore = new AtomicLong();
-		final AtomicLong countedBatchAfter = new AtomicLong();
-
-		Streams.period(5, TimeUnit.SECONDS).consume(new Consumer<Long>() {
-
-			@Override
-			public void accept(Long t) {
-				log.info("XXXX data=" + countedData.get() +" countedBatchBefore="+ countedBatchBefore.get() + " countedBatchAfter=" + countedBatchAfter);
-			}
-		});
-
 		final Stream<Buffer> stream = Streams
 		.wrap(processor)
-		.observe(new Consumer<Buffer>() {
-			@Override
-			public void accept(Buffer t) {
-				countedData.incrementAndGet();
-			}
-		})
 		.window(flushCount, flushTime, TimeUnit.SECONDS)
 		.flatMap(new Function<Stream<Buffer>, Publisher<Buffer>>() {
 
 			@Override
 			public Publisher<Buffer> apply(Stream<Buffer> t) {
 
-//				Stream<Buffer> observe = t.observe(new Consumer<Buffer>() {
-//					@Override
-//					public void accept(Buffer t) {
-//						countedData.incrementAndGet();
-//					}
-//				});
-
-//				Stream<Buffer> reduce = observe.reduce(new Buffer(), new BiFunction<Buffer, Buffer, Buffer>() {
-//
-//					@Override
-//					public Buffer apply(Buffer prev, Buffer next) {
-//						return prev.append(next);
-//					}
-//				});
-
-				Stream<Buffer> reduce = t.reduce(new Buffer(), new BiFunction<Buffer, Buffer, Buffer>() {
+				return t.reduce(new Buffer(), new BiFunction<Buffer, Buffer, Buffer>() {
 
 					@Override
 					public Buffer apply(Buffer prev, Buffer next) {
 						return prev.append(next);
 					}
 				});
-//				return reduce.observe(new Consumer<Buffer>() {
-//					@Override
-//					public void accept(Buffer t) {
-//						countedData.incrementAndGet();
-//					}
-//				});
-				return reduce;
 			}
 		})
 		.process(RingBufferWorkProcessor.<Buffer>create(false));
-
-//		final Stream<Buffer> stream = Streams
-//		.wrap(processor)
-//		.window(flushCount, flushTime, TimeUnit.SECONDS)
-//		.flatMap(new Function<Stream<Buffer>, Publisher<Buffer>>() {
-//
-//			@Override
-//			public Publisher<Buffer> apply(Stream<Buffer> t) {
-//				return t.reduce(new Buffer(), new BiFunction<Buffer, Buffer, Buffer>() {
-//
-//					@Override
-//					public Buffer apply(Buffer prev, Buffer next) {
-//						return prev.append(next);
-//					}
-//				});
-//			}
-//		})
-//		.process(RingBufferWorkProcessor.<Buffer>create(false));
 
 		reactor.io.net.http.HttpServer<Buffer, Buffer> httpServer = NetStreams
 				.httpServer(new Function<HttpServer<Buffer, Buffer>, HttpServer<Buffer, Buffer>>() {
@@ -165,7 +103,6 @@ public class GPFDistServer {
 						return server
 								.codec(new GPFDistCodec())
 								.listen(port);
-//								.dispatcher(Environment.sharedDispatcher());
 					}
 				});
 
@@ -183,30 +120,12 @@ public class GPFDistServer {
 				request.addResponseHeader("Connection", "close");
 
 				return stream
-						.observe(new Consumer<Buffer>() {
-							@Override
-							public void accept(Buffer t) {
-								countedBatchBefore.incrementAndGet();
-							}
-						})
-//						.log("before take")
-//						.take(batchTime, TimeUnit.SECONDS)
-//						.log("after take")
+						
 						.take(batchCount)
-						.observe(new Consumer<Buffer>() {
-							@Override
-							public void accept(Buffer t) {
-								countedBatchAfter.incrementAndGet();
-							}
-						})
+						.timeout(batchTimeout, TimeUnit.SECONDS, Streams.<Buffer>empty())					
 //						.take(batchTimeout, TimeUnit.SECONDS)
-//						.concatWith(Streams.just(Buffer.wrap(new byte[0])));
-
-//						.take(batchCount)
-						.timeout(batchTimeout, TimeUnit.SECONDS, Streams.<Buffer>empty())
+						
 						.concatWith(Streams.just(Buffer.wrap(new byte[0])));
-
-//						.timeout(batchTimeout, TimeUnit.SECONDS, Streams.just(Buffer.wrap(new byte[0])).log("reactor.timeout"));
 			}
 		});
 
