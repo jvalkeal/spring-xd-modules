@@ -38,12 +38,15 @@ public class LoadGenerator extends MessageProducerSupport {
 	private int recordCount;
 	private String recordDelimiter;
 	private boolean recordType;
+	private long sleepTime;
+	private int sleepCount;
+	private final boolean sleep;
 	private final AtomicBoolean running = new AtomicBoolean(false);
 	private ExecutorService executorService;
 
 	Logger logger = LoggerFactory.getLogger(LoadGenerator.class);
 
-	public LoadGenerator(int producers, int messageCount, int recordCount, String recordDelimiter, String recordType) {
+	public LoadGenerator(int producers, int messageCount, int recordCount, String recordDelimiter, String recordType, long sleepTime, int sleepCount) {
 		this.producers = producers;
 		this.messageCount = messageCount;
 		this.recordCount = recordCount;
@@ -55,6 +58,9 @@ public class LoadGenerator extends MessageProducerSupport {
 		if ("counter".equals(recordType)) {
 			this.recordType = true;
 		}
+		this.sleepTime = sleepTime;
+		this.sleepCount = sleepCount;
+		this.sleep = sleepTime > 0 && sleepCount > 0;
 	}
 
 	@Override
@@ -95,6 +101,12 @@ public class LoadGenerator extends MessageProducerSupport {
 					}
 				}
 				sendMessage(MessageBuilder.withPayload(buf.toString()).build());
+				if (sleep && ((x + 1) % sleepCount) == 0) {
+					try {
+						Thread.sleep(sleepTime);
+					} catch (InterruptedException e) {
+					}
+				}
 			}
 			logger.info("All Messages Dispatched");
 		}

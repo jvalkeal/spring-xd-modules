@@ -15,7 +15,7 @@
  */
 package org.springframework.xd.greenplum;
 
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThat;
 
@@ -28,7 +28,7 @@ import reactor.Environment;
 import reactor.fn.Function;
 import reactor.io.buffer.Buffer;
 import reactor.io.net.NetStreams;
-import reactor.io.net.Spec.HttpServer;
+import reactor.io.net.Spec.HttpServerSpec;
 
 public class TestListenAddress {
 
@@ -37,10 +37,10 @@ public class TestListenAddress {
 		Environment.initializeIfEmpty().assignErrorJournal();
 
 		reactor.io.net.http.HttpServer<Buffer, Buffer> httpServer = NetStreams
-				.httpServer(new Function<HttpServer<Buffer, Buffer>, HttpServer<Buffer, Buffer>>() {
+				.httpServer(new Function<HttpServerSpec<Buffer, Buffer>, HttpServerSpec<Buffer, Buffer>>() {
 
 					@Override
-					public HttpServer<Buffer, Buffer> apply(HttpServer<Buffer, Buffer> server) {
+					public HttpServerSpec<Buffer, Buffer> apply(HttpServerSpec<Buffer, Buffer> server) {
 						return server
 								.codec(new GPFDistCodec())
 								.listen(0);
@@ -49,6 +49,7 @@ public class TestListenAddress {
 		httpServer.start().awaitSuccess();
 		InetSocketAddress address = httpServer.getListenAddress();
 		assertThat(address, notNullValue());
+		assertThat(address.getPort(), not(0));
 		httpServer.shutdown();
 	}
 

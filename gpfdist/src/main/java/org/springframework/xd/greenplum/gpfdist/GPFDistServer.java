@@ -27,8 +27,9 @@ import reactor.fn.BiFunction;
 import reactor.fn.Function;
 import reactor.io.buffer.Buffer;
 import reactor.io.net.NetStreams;
-import reactor.io.net.Spec.HttpServer;
+import reactor.io.net.Spec.HttpServerSpec;
 import reactor.io.net.http.HttpChannel;
+import reactor.io.net.http.HttpServer;
 import reactor.rx.Stream;
 import reactor.rx.Streams;
 
@@ -48,7 +49,9 @@ public class GPFDistServer {
 
 	private final int batchCount;
 
-	private reactor.io.net.http.HttpServer<Buffer, Buffer> server;
+	private HttpServer<Buffer, Buffer> server;
+
+	private int localPort = -1;
 
 	public GPFDistServer(Processor<Buffer, Buffer> processor, int port, int flushCount, int flushTime, int batchTimeout, int batchCount) {
 		this.processor = processor;
@@ -59,7 +62,7 @@ public class GPFDistServer {
 		this.batchCount = batchCount;
 	}
 
-	public synchronized reactor.io.net.http.HttpServer<Buffer, Buffer> start() throws Exception {
+	public synchronized HttpServer<Buffer, Buffer> start() throws Exception {
 		if (server == null) {
 			server = createProtocolListener();
 		}
@@ -73,7 +76,11 @@ public class GPFDistServer {
 		server = null;
 	}
 
-	private reactor.io.net.http.HttpServer<Buffer, Buffer> createProtocolListener()
+	public int getLocalPort() {
+		return localPort;
+	}
+
+	private HttpServer<Buffer, Buffer> createProtocolListener()
 			throws Exception {
 
 		final Stream<Buffer> stream = Streams
@@ -95,11 +102,11 @@ public class GPFDistServer {
 		})
 		.process(RingBufferWorkProcessor.<Buffer>create(false));
 
-		reactor.io.net.http.HttpServer<Buffer, Buffer> httpServer = NetStreams
-				.httpServer(new Function<HttpServer<Buffer, Buffer>, HttpServer<Buffer, Buffer>>() {
+		HttpServer<Buffer, Buffer> httpServer = NetStreams
+				.httpServer(new Function<HttpServerSpec<Buffer, Buffer>, HttpServerSpec<Buffer, Buffer>>() {
 
 					@Override
-					public HttpServer<Buffer, Buffer> apply(HttpServer<Buffer, Buffer> server) {
+					public HttpServerSpec<Buffer, Buffer> apply(HttpServerSpec<Buffer, Buffer> server) {
 						return server
 								.codec(new GPFDistCodec())
 								.listen(port);
@@ -110,7 +117,7 @@ public class GPFDistServer {
 
 			@Override
 			public Publisher<Buffer> apply(HttpChannel<Buffer, Buffer> request) {
-				log.info("New incoming request: " + request.headers());
+//				log.info("New incoming request: " + request.headers());
 				request.responseHeaders().removeTransferEncodingChunked();
 				request.addResponseHeader("Content-type", "text/plain");
 				request.addResponseHeader("Expires", "0");
@@ -120,16 +127,14 @@ public class GPFDistServer {
 				request.addResponseHeader("Connection", "close");
 
 				return stream
-						
 						.take(batchCount)
-						.timeout(batchTimeout, TimeUnit.SECONDS, Streams.<Buffer>empty())					
-//						.take(batchTimeout, TimeUnit.SECONDS)
-						
+						.timeout(batchTimeout, TimeUnit.SECONDS, Streams.<Buffer>empty())
 						.concatWith(Streams.just(Buffer.wrap(new byte[0])));
 			}
 		});
 
 		httpServer.start().awaitSuccess();
+		localPort = httpServer.getListenAddress().getPort();
 		return httpServer;
 	}
 

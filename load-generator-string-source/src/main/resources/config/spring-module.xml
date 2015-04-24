@@ -13,6 +13,8 @@
         <constructor-arg name="recordCount" value="${recordCount}"/>
         <constructor-arg name="recordDelimiter" value="${recordDelimiter}"/>
         <constructor-arg name="recordType" value="${recordType}"/>
+        <constructor-arg name="sleepTime" value="${sleepTime}"/>
+        <constructor-arg name="sleepCount" value="${sleepCount}"/>
         <property name="autoStartup" value="false"/>
         <property name="outputChannel" ref="output"/>
     </bean>

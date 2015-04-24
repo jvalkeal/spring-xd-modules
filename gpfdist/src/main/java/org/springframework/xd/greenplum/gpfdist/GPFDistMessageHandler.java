@@ -110,6 +110,7 @@ public class GPFDistMessageHandler extends AbstractGPFDistMessageHandler {
 			log.info("Creating gpfdist protocol listener on port=" + port);
 			gpfdistServer = new GPFDistServer(processor, port, flushCount, flushTime, batchTimeout, batchCount);
 			gpfdistServer.start();
+			log.info("gpfdist protocol listener running on port=" + gpfdistServer.getLocalPort());
 		} catch (Exception e) {
 			throw new RuntimeException("Error starting protocol listener", e);
 		}
@@ -120,6 +121,7 @@ public class GPFDistMessageHandler extends AbstractGPFDistMessageHandler {
 			sqlTaskScheduler.schedule((new FutureTask<Void>(new Runnable() {
 				@Override
 				public void run() {
+					boolean taskValue = true;
 					try {
 						while(!taskFuture.interrupted) {
 							try {
@@ -130,8 +132,9 @@ public class GPFDistMessageHandler extends AbstractGPFDistMessageHandler {
 							Thread.sleep(batchPeriod*1000);
 						}
 					} catch (Exception e) {
-						taskFuture.set(false);
+						taskValue = false;
 					}
+					taskFuture.set(taskValue);
 				}
 			}, null)), new Date());
 
@@ -145,8 +148,13 @@ public class GPFDistMessageHandler extends AbstractGPFDistMessageHandler {
 		if (greenplumLoad != null) {
 			taskFuture.interruptTask();
 			try {
-				taskFuture.get(batchPeriod, TimeUnit.SECONDS);
-			} catch (Exception e1) {
+				long now = System.currentTimeMillis();
+				// wait a bit more than batch period
+				Boolean value = taskFuture.get(batchTimeout + batchPeriod + 2, TimeUnit.SECONDS);
+				log.info("Stopping, got future value " + value + " from task which took "
+						+ (System.currentTimeMillis() - now) + "ms");
+			} catch (Exception e) {
+				log.warn("Got error from task wait value which may indicate trouble", e);
 			}
 		}
 
