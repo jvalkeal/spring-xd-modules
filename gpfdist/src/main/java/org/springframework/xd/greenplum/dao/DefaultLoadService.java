@@ -53,7 +53,8 @@ public class DefaultLoadService implements LoadService {
 				context != null ? context.getLocations() : null);
         String sqlDropTable = SqlUtils.dropExternalReadableTable(loadConfiguration, prefix);
 
-        operations.add(sqlCreateTable, sqlDropTable);
+        operations.addCleanOperations(sqlCreateTable, sqlDropTable);
+        operations.addLifecycleOperations(loadConfiguration.getSqlBefore(), loadConfiguration.getSqlAfter());
 
         // throw if failed during the prepare phase,
         // we can't continue

@@ -15,11 +15,13 @@
  */
 package org.springframework.xd.greenplum.support;
 
+/**
+ * Pojo representation of a greenplum gpload control file.
+ *
+ * @author Janne Valkealahti
+ *
+ */
 public class ControlFile {
-
-	private Character gploadInputDelimiter;
-	private String gploadOutputTable;
-	private OutputMode gploadOutputMode = OutputMode.INSERT;
 
 	private String database;
 	private String user;
@@ -27,28 +29,15 @@ public class ControlFile {
 	private String host;
 	private Integer port;
 
+	private Character gploadInputDelimiter;
+	private String gploadOutputTable;
+	private OutputMode gploadOutputMode = OutputMode.INSERT;
+
+	private String gploadSqlBefore;
+	private String gploadSqlAfter;
+
 	public Character getGploadInputDelimiter() {
 		return gploadInputDelimiter;
-	}
-
-	public void setGploadInputDelimiter(Character gploadInputDelimiter) {
-		this.gploadInputDelimiter = gploadInputDelimiter;
-	}
-
-	public String getGploadOutputTable() {
-		return gploadOutputTable;
-	}
-
-	public void setGploadOutputTable(String gploadOutputTable) {
-		this.gploadOutputTable = gploadOutputTable;
-	}
-
-	public OutputMode getGploadOutputMode() {
-		return gploadOutputMode;
-	}
-
-	public void setGploadOutputMode(OutputMode gploadOutputMode) {
-		this.gploadOutputMode = gploadOutputMode;
 	}
 
 	public String getDatabase() {
@@ -91,7 +80,41 @@ public class ControlFile {
 		this.port = port;
 	}
 
+	public void setGploadInputDelimiter(Character gploadInputDelimiter) {
+		this.gploadInputDelimiter = gploadInputDelimiter;
+	}
 
+	public String getGploadOutputTable() {
+		return gploadOutputTable;
+	}
+
+	public void setGploadOutputTable(String gploadOutputTable) {
+		this.gploadOutputTable = gploadOutputTable;
+	}
+
+	public OutputMode getGploadOutputMode() {
+		return gploadOutputMode;
+	}
+
+	public void setGploadOutputMode(OutputMode gploadOutputMode) {
+		this.gploadOutputMode = gploadOutputMode;
+	}
+
+	public String getGploadSqlBefore() {
+		return gploadSqlBefore;
+	}
+
+	public void setGploadSqlBefore(String gploadSqlBefore) {
+		this.gploadSqlBefore = gploadSqlBefore;
+	}
+
+	public String getGploadSqlAfter() {
+		return gploadSqlAfter;
+	}
+
+	public void setGploadSqlAfter(String gploadSqlAfter) {
+		this.gploadSqlAfter = gploadSqlAfter;
+	}
 
 	public enum OutputMode {
 		INSERT, UPDATE, MERGE

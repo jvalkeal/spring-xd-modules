@@ -37,11 +37,21 @@ public class LoadConfigurationFactoryBean implements FactoryBean<LoadConfigurati
 
 	private List<String> updateColumns;
 
+	private String sqlBefore;
+
+	private String sqlAfter;
+
 	@Override
 	public void afterPropertiesSet() throws Exception {
 		if (controlFile != null) {
 			if (StringUtils.hasText(controlFile.getGploadOutputTable())) {
 				table = controlFile.getGploadOutputTable();
+			}
+			if (StringUtils.hasText(controlFile.getGploadSqlBefore())) {
+				sqlBefore = controlFile.getGploadSqlBefore();
+			}
+			if (StringUtils.hasText(controlFile.getGploadSqlAfter())) {
+				sqlAfter = controlFile.getGploadSqlAfter();
 			}
 		}
 	}
@@ -111,6 +121,22 @@ public class LoadConfigurationFactoryBean implements FactoryBean<LoadConfigurati
 
 	public void setUpdateColumns(List<String> updateColumns) {
 		this.updateColumns = updateColumns;
+	}
+
+	public String getSqlBefore() {
+		return sqlBefore;
+	}
+
+	public void setSqlBefore(String sqlBefore) {
+		this.sqlBefore = sqlBefore;
+	}
+
+	public String getSqlAfter() {
+		return sqlAfter;
+	}
+
+	public void setSqlAfter(String sqlAfter) {
+		this.sqlAfter = sqlAfter;
 	}
 
 }

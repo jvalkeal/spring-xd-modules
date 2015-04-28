@@ -23,28 +23,52 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.util.StringUtils;
 
+/**
+ * Utility class order to ease jdbc operations when interacting
+ * with a greenplum.
+ *
+ * @author Janne Valkealahti
+ *
+ */
 public class CleanableJdbcOperations {
 
 	private static final Log log = LogFactory.getLog(CleanableJdbcOperations.class);
 
 	private JdbcTemplate jdbcTemplate;
-	private List<Operation> operations;
+	private List<Operation> operations1;
+	private List<Operation> operations2;
 	private String runSql;
 	private DataAccessException createException;
 	private DataAccessException cleanException;
 
+	/**
+	 * Instantiates a new cleanable jdbc operations.
+	 *
+	 * @param jdbcTemplate the jdbc template
+	 */
 	public CleanableJdbcOperations(JdbcTemplate jdbcTemplate) {
 		this.jdbcTemplate = jdbcTemplate;
-		this.operations = new ArrayList<CleanableJdbcOperations.Operation>();
+		this.operations1 = new ArrayList<CleanableJdbcOperations.Operation>();
+		this.operations2 = new ArrayList<CleanableJdbcOperations.Operation>();
 	}
 
+	/**
+	 * Sets the jdbc template.
+	 *
+	 * @param jdbcTemplate the new jdbc template
+	 */
 	public void setJdbcTemplate(JdbcTemplate jdbcTemplate) {
 		this.jdbcTemplate = jdbcTemplate;
 	}
 
-	public void add(String createSql, String cleanSql) {
-		operations.add(new Operation(createSql, cleanSql));
+	public void addCleanOperations(String createSql, String cleanSql) {
+		operations1.add(new Operation(createSql, cleanSql));
+	}
+
+	public void addLifecycleOperations(String beforeSql, String afterSql) {
+		operations2.add(new Operation(beforeSql, beforeSql));
 	}
 
 	public void setRunSql(String sql) {
@@ -67,7 +91,18 @@ public class CleanableJdbcOperations {
 	}
 
 	public void prepare() {
-		for (Operation operation : operations) {
+		for (Operation operation : operations2) {
+			if (StringUtils.hasText(operation.createSql)) {
+				try {
+					log.info(operation.createSql);
+					jdbcTemplate.execute(operation.createSql);
+				} catch (DataAccessException e) {
+					createException = e;
+					return;
+				}
+			}
+		}
+		for (Operation operation : operations1) {
 			try {
 				log.info(operation.createSql);
 				jdbcTemplate.execute(operation.createSql);
@@ -79,7 +114,7 @@ public class CleanableJdbcOperations {
 	}
 
 	public void clean() {
-		ListIterator<Operation> listIterator = operations.listIterator(operations.size());
+		ListIterator<Operation> listIterator = operations1.listIterator(operations1.size());
 		while (listIterator.hasPrevious()) {
 			Operation operation = (Operation) listIterator.previous();
 			try {
@@ -87,6 +122,18 @@ public class CleanableJdbcOperations {
 				jdbcTemplate.execute(operation.cleanSql);
 			} catch (DataAccessException e) {
 				cleanException = e;
+			}
+		}
+		listIterator = operations2.listIterator(operations1.size());
+		while (listIterator.hasPrevious()) {
+			Operation operation = (Operation) listIterator.previous();
+			if (StringUtils.hasText(operation.cleanSql)) {
+				try {
+					log.info(operation.cleanSql);
+					jdbcTemplate.execute(operation.cleanSql);
+				} catch (DataAccessException e) {
+					cleanException = e;
+				}
 			}
 		}
 	}

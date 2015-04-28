@@ -24,7 +24,14 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.config.YamlMapFactoryBean;
 import org.springframework.core.io.Resource;
 
-public class ControlFileFactoryBean implements FactoryBean<ControlFile>, InitializingBean{
+/**
+ * {@link FactoryBean} for building a {@link ControlFile} instance out from
+ * a yml file.
+ *
+ * @author Janne Valkealahti
+ *
+ */
+public class ControlFileFactoryBean implements FactoryBean<ControlFile>, InitializingBean {
 
 	private ControlFile controlFile;
 
@@ -54,6 +61,11 @@ public class ControlFileFactoryBean implements FactoryBean<ControlFile>, Initial
 		return true;
 	}
 
+	/**
+	 * Sets the control file resource.
+	 *
+	 * @param controlFileResource the new control file resource
+	 */
 	public void setControlFileResource(Resource controlFileResource) {
 		this.controlFileResource = controlFileResource;
 	}
@@ -104,6 +116,25 @@ public class ControlFileFactoryBean implements FactoryBean<ControlFile>, Initial
 													if (((String)e2.getValue()).length() == 1) {
 														cf.setGploadInputDelimiter(((String)e2.getValue()).charAt(0));
 													}
+												}
+											}
+										}
+									}
+								}
+							}
+						} else if (e1.getKey().toLowerCase().equals("sql")) {
+							if (e1.getValue() instanceof List) {
+								for (Object v : (List<?>)e1.getValue()) {
+									if (v instanceof Map) {
+										Map<String, Object> sqlMap = (Map<String, Object>)v;
+										for (Entry<String, Object> e2 : sqlMap.entrySet()) {
+											if (e2.getKey().toLowerCase().equals("before")) {
+												if (e2.getValue() instanceof String) {
+													cf.setGploadSqlBefore((String)e2.getValue());
+												}
+											} else if (e2.getKey().toLowerCase().equals("after")) {
+												if (e2.getValue() instanceof String) {
+													cf.setGploadSqlAfter((String)e2.getValue());
 												}
 											}
 										}

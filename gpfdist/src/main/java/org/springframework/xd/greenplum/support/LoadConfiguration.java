@@ -31,6 +31,10 @@ public class LoadConfiguration {
 
 	private List<String> updateColumns;
 
+	private String sqlBefore;
+
+	private String sqlAfter;
+
 	public LoadConfiguration() {
 		super();
 	}
@@ -91,6 +95,22 @@ public class LoadConfiguration {
 
 	public void setUpdateColumns(List<String> updateColumns) {
 		this.updateColumns = updateColumns;
+	}
+
+	public String getSqlBefore() {
+		return sqlBefore;
+	}
+
+	public void setSqlBefore(String sqlBefore) {
+		this.sqlBefore = sqlBefore;
+	}
+
+	public String getSqlAfter() {
+		return sqlAfter;
+	}
+
+	public void setSqlAfter(String sqlAfter) {
+		this.sqlAfter = sqlAfter;
 	}
 
 }

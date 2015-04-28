@@ -43,6 +43,9 @@ public class ControlFileTests {
 		assertThat(cf.getHost(), is("mdw.example.org"));
 		assertThat(cf.getPort(), is(5432));
 		assertThat(cf.getPassword(), nullValue());
+
+		assertThat(cf.getGploadSqlBefore(), is("select 1 as before"));
+		assertThat(cf.getGploadSqlAfter(), is("select 1 as after"));
 	}
 
 	static class Config1 {

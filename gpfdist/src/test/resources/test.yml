@@ -20,4 +20,6 @@ GPLOAD:
     OUTPUT:
      - TABLE: test
      - MODE: INSERT
-
+    SQL:
+     - BEFORE: "select 1 as before"
+     - AFTER: "select 1 as after"

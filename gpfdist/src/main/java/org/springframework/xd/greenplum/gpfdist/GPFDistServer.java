@@ -130,7 +130,8 @@ public class GPFDistServer {
 				return request.writeWith(stream
 						.take(batchCount)
 						.timeout(batchTimeout, TimeUnit.SECONDS, Streams.<Buffer>empty())
-						.concatWith(Streams.just(Buffer.wrap(new byte[0]))));
+						.concatWith(Streams.just(Buffer.wrap(new byte[0]))))
+						.capacity(1);
 			}
 		});
 
